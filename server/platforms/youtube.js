@@ -42,6 +42,10 @@ class YouTube extends EventEmitter {
     return null;
   }
 
+  isLive(b) {
+    return ['live', 'liveStarting'].includes(b?.status?.lifeCycleStatus);
+  }
+
   async connect() {
     this.want = true;
     const run = ++this.run;
@@ -54,8 +58,14 @@ class YouTube extends EventEmitter {
         if (!this.liveChatId) {
           this.broadcast = await this.findBroadcast();
           if (!this.broadcast) {
-            this.status('error', 'Nenhuma live ativa/agendada. Nova tentativa em 30s...');
+            this.status('connecting', 'Nenhuma live ativa ou agendada. Nova tentativa em 30s...');
             await sleep(30000);
+            continue;
+          }
+          // live agendada ainda não começou: só confere de novo a cada 60s (não gasta cota com chat vazio)
+          if (!this.isLive(this.broadcast)) {
+            this.status('connecting', `Aguardando a live começar no YouTube · ${this.broadcast.snippet.title}`);
+            await sleep(60000);
             continue;
           }
           this.liveChatId = this.broadcast.snippet.liveChatId;
@@ -66,7 +76,7 @@ class YouTube extends EventEmitter {
         if (pageToken) q.set('pageToken', pageToken);
         const j = await this.api('/liveChat/messages?' + q);
         pageToken = j.nextPageToken;
-        this.status('on', this.broadcast?.snippet.title || '');
+        this.status('on', `Ao vivo · ${this.broadcast?.snippet.title || ''}`);
         // na primeira leitura só mostramos as últimas mensagens para não despejar histórico
         const items = first ? j.items.slice(-20) : j.items;
         first = false;
@@ -75,7 +85,7 @@ class YouTube extends EventEmitter {
         await sleep(wait);
       } catch (e) {
         const msg = String(e.message);
-        if (/ended|not found|liveChatId/i.test(msg)) this.liveChatId = null;
+        if (/ended|not found|liveChatId|disabled/i.test(msg)) this.liveChatId = null;
         this.status('error', msg);
         await sleep(/quota/i.test(msg) ? 600000 : 15000);
       }

@@ -37,7 +37,7 @@ button { cursor: pointer; }
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 8px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
 
-.app { display: grid; grid-template-columns: 68px 1fr; height: 100%; }
+.app { display: grid; grid-template-columns: 68px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); height: 100%; }
 
 /* ---------- Rail ---------- */
 .rail {
@@ -71,10 +71,10 @@ button { cursor: pointer; }
 @keyframes pulse { 50% { opacity: 0.3; } }
 
 /* ---------- Views ---------- */
-main { position: relative; min-width: 0; height: 100%; }
+main { position: relative; min-width: 0; min-height: 0; height: 100%; overflow: hidden; }
 .view { display: none; height: 100%; flex-direction: column; min-height: 0; }
 .view.active { display: flex; }
-.scroll { overflow-y: auto; padding: 24px; flex: 1; }
+.scroll { overflow-y: auto; overflow-x: hidden; padding: 24px; flex: 1; min-height: 0; }
 .wrap { max-width: 860px; margin: 0 auto; display: grid; gap: 16px; }
 h1 { font-size: 22px; margin: 0 0 2px; letter-spacing: -0.4px; }
 .sub { color: var(--muted); margin: 0 0 8px; }
@@ -235,7 +235,7 @@ code, .code { background: rgba(0, 0, 0, 0.4); padding: 2px 7px; border-radius: 6
 
 /* ---------- Estreito (dock do OBS) ---------- */
 @media (max-width: 640px) {
-  .app { grid-template-columns: 1fr; grid-template-rows: 1fr 56px; }
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 56px; }
   .rail { grid-row: 2; flex-direction: row; justify-content: space-around; padding: 0 8px; border-right: 0; border-top: 1px solid var(--line); }
   .brand, .rail .spacer { display: none; }
   .nav.active::before { left: 10px; right: 10px; top: -6px; bottom: auto; width: auto; height: 3px; }
@@ -288,3 +288,6 @@ code, .code { background: rgba(0, 0, 0, 0.4); padding: 2px 7px; border-radius: 6
 .secretwrap .sbtns button:hover { background: var(--panel-hi); color: var(--text); }
 .secretwrap svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .inobs .reveal-only { display: none !important; }
+
+.acct-head .pill { max-width: 62%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.rail { overflow-y: auto; }
