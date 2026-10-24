@@ -1,6 +1,7 @@
 const EventEmitter = require('events');
 const cfg = require('../config');
 const { getToken } = require('../auth');
+const { makeEvent } = require('../events');
 
 const API = 'https://www.googleapis.com/youtube/v3';
 
@@ -85,6 +86,16 @@ class YouTube extends EventEmitter {
     const s = i.snippet;
     const a = i.authorDetails;
     let text = s.displayMessage || s.textMessageDetails?.messageText || '';
+    const ev = (o) => this.emit('message', makeEvent('youtube', { id: i.id, user: a.displayName, ...o }));
+    if (s.type === 'newSponsorEvent') return ev({ ev: 'member', label: 'virou membro', title: s.newSponsorDetails?.memberLevelName });
+    if (s.type === 'memberMilestoneChatEvent') {
+      const d = s.memberMilestoneChatDetails || {};
+      return ev({ ev: 'member', label: `completou ${d.memberMonth} meses de membro`, title: d.memberLevelName, detail: d.userComment });
+    }
+    if (s.type === 'membershipGiftingEvent') {
+      const n = s.membershipGiftingDetails?.giftMembershipsCount || 1;
+      return ev({ ev: 'gift', label: `presenteou ${n} assinatura${n > 1 ? 's' : ''}` });
+    }
     if (s.type !== 'textMessageEvent' && s.type !== 'superChatEvent' && s.type !== 'superStickerEvent') return;
     const badges = [];
     if (a.isChatOwner) badges.push('broadcaster');
@@ -126,6 +137,14 @@ class YouTube extends EventEmitter {
     if (!b) throw new Error('YouTube: nenhuma live ativa ou agendada');
     this.broadcast = b;
     return { title: b.snippet.title, game: null, gameId: null };
+  }
+
+  async getViewers() {
+    if (!this.broadcast) return null;
+    const j = await this.api(`/videos?part=liveStreamingDetails&id=${this.broadcast.id}`);
+    const d = j.items?.[0]?.liveStreamingDetails;
+    const live = !!d?.actualStartTime && !d?.actualEndTime;
+    return { live, count: live ? Number(d.concurrentViewers || 0) : 0 };
   }
 
   // A API do YouTube não permite definir "jogo" — só título

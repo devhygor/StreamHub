@@ -21,6 +21,8 @@ const DEFAULTS = {
     showTimestamps: false,
     showBadges: true,
     hideCommands: true,
+    showEvents: true,
+    hideFollows: false,
     hiddenUsers: ['nightbot', 'streamelements', 'moobot', 'streamlabs'],
     highlightWords: [],
     maxMessages: 300,

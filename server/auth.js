@@ -6,7 +6,7 @@ const PROVIDERS = {
   twitch: {
     authUrl: 'https://id.twitch.tv/oauth2/authorize',
     tokenUrl: 'https://id.twitch.tv/oauth2/token',
-    scope: 'chat:read chat:edit channel:manage:broadcast',
+    scope: 'chat:read chat:edit channel:manage:broadcast channel:read:redemptions moderator:read:followers channel:read:subscriptions bits:read',
     async identify(access) {
       const r = await fetch('https://api.twitch.tv/helix/users', {
         headers: { Authorization: `Bearer ${access}`, 'Client-Id': cfg.data.apps.twitch.clientId },
@@ -18,7 +18,7 @@ const PROVIDERS = {
   kick: {
     authUrl: 'https://id.kick.com/oauth/authorize',
     tokenUrl: 'https://id.kick.com/oauth/token',
-    scope: 'user:read channel:read channel:write chat:write events:subscribe',
+    scope: 'user:read channel:read channel:write chat:write events:subscribe channel:rewards:read kicks:read',
     pkce: true,
     async identify(access) {
       const h = { Authorization: `Bearer ${access}` };

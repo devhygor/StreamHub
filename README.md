@@ -24,6 +24,12 @@ Em **Contas**, siga o passo a passo de cada plataforma. Modo demonstração em *
 | Kick | Webhook oficial (precisa da VPS) | sim (login) | sim | sim |
 | YouTube | API oficial (polling) | sim (login) | sim | não (limite da API) |
 
+## Eventos e espectadores
+- Aparecem no chat como cards: resgates da loja de pontos, follows, subs/renovações, presentes, bits, raids, membros do YouTube e Kicks.
+- Twitch: EventSub por websocket (precisa dos escopos novos: refaça o login). Kick: webhook oficial (refaça o login para os novos escopos). YouTube: membros e Super Chat via chat.
+- Barra no topo do chat: espectadores por plataforma + total (atualiza a cada 30 s; YouTube a cada 60 s).
+- Campos sensíveis (Client ID/Secret, links do OBS) ficam mascarados; olho mostra por 8 s e o botão copia sem mostrar. Dentro do OBS a aba OBS some.
+
 ## Pegadinhas
 - Kick: o chat vem por webhook. No app da Kick, cole `https://stream.hygor.com.br/webhooks/kick` em Webhook URL e ative Enable Webhooks. O Pusher antigo foi desligado pela Kick.
 - YouTube: cota gratuita ≈ 3h30 de live por dia com leitura a cada 8s; ajuste em Ajustes.

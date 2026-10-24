@@ -15,8 +15,27 @@ const TEXTS = [
 let timer = null;
 let n = 0;
 
-function start(push) {
+const EVENTS = [
+  ['twitch', 'redeem', 'LunaVoid', 'resgatou', 'Hidratar!', '500 pts', ''],
+  ['twitch', 'follow', 'NeoPixel', 'seguiu o canal', '', '', ''],
+  ['twitch', 'sub', 'GabiPlays', 'renovou (7 meses)', '', 'Tier 1', 'melhor live!'],
+  ['twitch', 'cheer', 'ze_do_pao', 'enviou', '', '100 bits', 'toma'],
+  ['twitch', 'raid', 'CanalAmigo', 'fez raid com 42 pessoas', '', '', ''],
+  ['kick', 'redeem', 'Bruxo_BR', 'resgatou', 'Escolher a música', '1000 pts', 'Linkin Park'],
+  ['kick', 'gift', 'tiaDoCafe', 'presenteou 5 subs', '', '', ''],
+  ['kick', 'kicks', 'KickDaMassa', 'enviou Rage', '', '50 Kicks', ''],
+  ['youtube', 'member', 'Ana Beatriz', 'virou membro', 'Nível 1', '', ''],
+];
+let vt = null;
+
+function start(push, setViewers) {
   stop();
+  if (setViewers) {
+    let a = 120, b = 45, c = 80;
+    const upd = () => { a += Math.round(Math.random() * 10 - 5); b += Math.round(Math.random() * 6 - 3); c += Math.round(Math.random() * 8 - 4); setViewers({ twitch: { live: true, count: a }, kick: { live: true, count: b }, youtube: { live: true, count: c } }); };
+    upd();
+    vt = setInterval(upd, 4000);
+  }
   const tick = () => {
     const [platform, user, color, badges] = USERS[Math.floor(Math.random() * USERS.length)];
     const text = TEXTS[Math.floor(Math.random() * TEXTS.length)];
@@ -25,12 +44,18 @@ function start(push) {
       parts: [{ t: 'text', v: text }], text, ts: Date.now(), demo: true,
       superchat: platform === 'youtube' && Math.random() < 0.06 ? 'R$ 10,00' : null,
     });
+    if (Math.random() < 0.12) {
+      const [pl, ev, user, label, title, amount, detail] = EVENTS[Math.floor(Math.random() * EVENTS.length)];
+      push({ id: 'demo-ev-' + Date.now() + '-' + n++, kind: 'event', platform: pl, ev, user, label, title, amount, detail, text: user + ' ' + label, badges: [], parts: [], ts: Date.now() });
+    }
     timer = setTimeout(tick, 500 + Math.random() * 2200);
   };
   tick();
 }
 
 function stop() {
+  clearInterval(vt);
+  vt = null;
   clearTimeout(timer);
   timer = null;
 }

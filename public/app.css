@@ -253,3 +253,38 @@ code, .code { background: rgba(0, 0, 0, 0.4); padding: 2px 7px; border-radius: 6
 .steps { color: var(--muted); font-size: 13px; line-height: 1.8; padding-left: 20px; margin: 14px 0 0; }
 .steps b { color: var(--text); font-weight: 600; }
 @media (max-width: 760px) { .obs-grid { grid-template-columns: 1fr; } .preview { display: none; } }
+
+/* ---------- Barra de espectadores ---------- */
+.vbar { display: flex; gap: 8px; padding: 10px 14px 0; flex-wrap: wrap; align-items: stretch; }
+.vcell { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); font-weight: 700; min-width: 0; }
+.vcell .plogo { width: 16px; height: 16px; }
+.vcell .num { font-variant-numeric: tabular-nums; font-size: 15px; }
+.vcell .tag { font-size: 10px; font-weight: 700; letter-spacing: .5px; color: var(--muted); }
+.vcell.live .tag { color: var(--ok); }
+.vcell.off { opacity: .55; }
+.vcell.total { margin-left: auto; background: linear-gradient(135deg, rgba(139,92,246,.22), rgba(34,211,238,.14)); border-color: rgba(139,92,246,.4); }
+.vcell.total .num { font-size: 17px; }
+
+/* ---------- Eventos no chat ---------- */
+.msg.event { align-items: center; margin: 3px 0; padding: 8px 10px; background: linear-gradient(90deg, rgba(139,92,246,.16), rgba(139,92,246,.03)); box-shadow: inset 3px 0 var(--accent); }
+.msg.event.plat-twitch { box-shadow: inset 3px 0 var(--twitch); background: linear-gradient(90deg, rgba(145,70,255,.16), transparent); }
+.msg.event.plat-kick { box-shadow: inset 3px 0 var(--kick); background: linear-gradient(90deg, rgba(83,252,24,.12), transparent); }
+.msg.event.plat-youtube { box-shadow: inset 3px 0 var(--youtube); background: linear-gradient(90deg, rgba(255,61,61,.14), transparent); }
+.evico { width: 1em; height: 1em; padding: .3em; border-radius: 50%; background: rgba(255,255,255,.1); stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; color: #fbbf24; box-sizing: content-box; }
+.ev-follow .evico { color: #f472b6; } .ev-raid .evico { color: #22d3ee; } .ev-cheer .evico { color: #60a5fa; } .ev-redeem .evico, .ev-kicks .evico { color: #a78bfa; } .ev-gift .evico { color: #34d399; }
+.msg.event .plogo { margin-top: 0; }
+.evline { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.evlabel { color: #e6e6f0; }
+.evtitle { font-weight: 700; color: #fff; background: rgba(255,255,255,.1); padding: 1px 8px; border-radius: 6px; }
+.evamount { font-size: .8em; font-weight: 800; padding: 1px 8px; border-radius: 99px; background: rgba(251,191,36,.2); color: #fbbf24; }
+.evdetail { margin-top: 3px; color: var(--muted); font-style: italic; }
+
+/* ---------- Campos sensíveis ---------- */
+.mask { -webkit-text-security: disc; }
+.secretwrap { position: relative; display: flex; width: 100%; }
+.secretwrap input { padding-right: 76px; }
+.secretwrap .sbtns { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: flex; gap: 2px; }
+.secretwrap .sbtns button { border: 0; background: transparent; width: 28px; height: 28px; border-radius: 7px; color: var(--muted); display: grid; place-items: center; }
+.secretwrap .sbtns button:hover { background: var(--panel-hi); color: var(--text); }
+.secretwrap svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.inobs .reveal-only { display: none !important; }

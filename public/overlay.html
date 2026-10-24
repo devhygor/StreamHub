@@ -22,6 +22,13 @@
   .b-broadcaster { background: #ef4444; } .b-mod { background: #22c55e; color: #04210f; } .b-vip { background: #ec4899; } .b-sub { background: #a78bfa; color: #170b3b; }
   .super { background: rgba(255, 61, 61, 0.55); }
   .amount { background: #fff; color: #c00; font-size: .75em; font-weight: 800; padding: 1px 7px; border-radius: 6px; margin-left: 6px; text-shadow: none; }
+  .event { background: rgba(60, 30, 110, 0.7); align-items: center; }
+  .event.plat-kick { background: rgba(20, 70, 10, 0.7); } .event.plat-youtube { background: rgba(110, 20, 20, 0.7); }
+  .evico { width: 1em; height: 1em; padding: .3em; border-radius: 50%; background: rgba(255,255,255,.14); stroke: #fbbf24; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; box-sizing: content-box; }
+  .evline { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; } .event .plogo { margin: 0; }
+  .evtitle { background: rgba(255,255,255,.18); padding: 1px 8px; border-radius: 6px; font-weight: 800; }
+  .evamount { font-size: .8em; font-weight: 800; padding: 1px 8px; border-radius: 99px; background: rgba(251,191,36,.3); color: #fde68a; }
+  .evdetail { margin-top: 3px; opacity: .8; font-style: italic; font-weight: 500; }
   .hl { box-shadow: inset 3px 0 #fbbf24; background: rgba(120, 80, 0, 0.65); }
 </style>
 </head>
@@ -37,6 +44,7 @@
 
   function add(m) {
     if (only && !only.has(m.platform)) return;
+    if (m.kind === 'event' && q.get('events') === '0') return;
     if (!Chat.shouldShow(m, S.settings)) return;
     const n = Chat.render(m, S.settings);
     feed.appendChild(n);

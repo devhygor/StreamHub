@@ -5,6 +5,7 @@ const { WebSocketServer } = require('ws');
 const cfg = require('./config');
 const auth = require('./auth');
 const demo = require('./demo');
+const startViewers = require('./viewers');
 
 const platforms = {
   twitch: require('./platforms/twitch'),
@@ -105,8 +106,10 @@ for (const [name, p] of Object.entries(platforms)) {
 }
 
 wss.on('connection', (ws) => {
-  ws.send(JSON.stringify({ type: 'init', payload: { history, statuses, state: cfg.publicView() } }));
+  ws.send(JSON.stringify({ type: 'init', payload: { history, statuses, viewers: viewers.state, state: cfg.publicView() } }));
 });
+
+let viewers = { state: {}, refresh() {} };
 
 function pushState() {
   broadcast('state', cfg.publicView());
@@ -114,6 +117,7 @@ function pushState() {
 
 app.use(auth.router((p) => {
   pushState();
+  viewers.refresh(p);
   if (cfg.data.tokens[p]) platforms[p].connect();
   else platforms[p].disconnect();
 }));
@@ -206,7 +210,8 @@ app.get('/api/games', async (req, res) => {
 });
 
 app.post('/api/demo', (req, res) => {
-  req.body.on ? demo.start(pushMessage) : demo.stop();
+  if (req.body.on) demo.start(pushMessage, (s) => { Object.assign(viewers.state, s); broadcast('viewers', viewers.state); });
+  else { demo.stop(); for (const k of Object.keys(viewers.state)) delete viewers.state[k]; broadcast('viewers', viewers.state); }
   res.json({ ok: true });
 });
 
@@ -217,6 +222,7 @@ app.post('/api/clear', (req, res) => {
 });
 
 server.listen(cfg.data.port, () => {
+  viewers = startViewers(platforms, (s) => broadcast('viewers', s));
   console.log(`\n  StreamHub rodando em http://localhost:${cfg.data.port}\n`);
   if (cfg.data.channels.twitch.login || cfg.data.tokens.twitch) platforms.twitch.connect();
   if (cfg.data.tokens.kick) platforms.kick.connect();

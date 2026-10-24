@@ -2,6 +2,7 @@ const WebSocket = require('ws');
 const EventEmitter = require('events');
 const cfg = require('../config');
 const { getToken } = require('../auth');
+const { makeEvent, tier } = require('../events');
 
 const BADGES = { broadcaster: 'broadcaster', moderator: 'mod', vip: 'vip', subscriber: 'sub', founder: 'sub' };
 
@@ -25,6 +26,7 @@ class Twitch extends EventEmitter {
     this.want = true;
     clearTimeout(this.rt);
     this.close();
+    this.closeEvents();
     const login = (cfg.data.channels.twitch.login || cfg.data.tokens.twitch?.name || '').toLowerCase().replace(/^#/, '');
     if (!login) return this.status('off', 'Informe o canal da Twitch');
     this.channel = login;
@@ -67,6 +69,7 @@ class Twitch extends EventEmitter {
     this.want = false;
     clearTimeout(this.rt);
     this.close();
+    this.closeEvents();
     this.status('off');
   }
 
@@ -85,7 +88,7 @@ class Twitch extends EventEmitter {
     const m = rest.match(/^:([^ ]+) (\S+) ?(#\S+)? ?:?(.*)$/);
     if (!m) return;
     const [, prefix, cmd, , text] = m;
-    if (cmd === '001') { this.retry = 0; this.status('on', this.authed ? 'Logado' : 'Somente leitura'); }
+    if (cmd === '001') { this.retry = 0; this.status('on', this.authed ? 'Logado' : 'Somente leitura'); if (this.authed) this.connectEvents(); }
     else if (cmd === 'NOTICE' && /login|authentication/i.test(text)) this.status('error', text);
     else if (cmd === 'ROOMSTATE' && tags['room-id'] && this.roomId !== tags['room-id']) {
       this.roomId = tags['room-id'];
@@ -171,6 +174,86 @@ class Twitch extends EventEmitter {
       id: 'self-' + Date.now(), platform: 'twitch', user: cfg.data.tokens.twitch.name, color: '#9146ff', badges: [],
       parts: this.parse(text), text, ts: Date.now(), self: true,
     };
+  }
+
+  // ---- EventSub (resgates, follows, subs, bits, raids) via websocket: não precisa de URL pública ----
+  closeEvents() {
+    clearTimeout(this.evRt);
+    if (this.evws) {
+      const w = this.evws;
+      this.evws = null;
+      try { w.close(); } catch {}
+    }
+  }
+
+  connectEvents(url = 'wss://eventsub.wss.twitch.tv/ws', resub = true) {
+    if (!this.want || !this.authed) return;
+    const old = this.evws;
+    const ws = (this.evws = new WebSocket(url));
+    ws.on('message', (buf) => {
+      let m;
+      try { m = JSON.parse(buf.toString()); } catch { return; }
+      const type = m.metadata?.message_type;
+      if (type === 'session_welcome') {
+        if (old && old !== ws) try { old.close(); } catch {}
+        if (resub) this.subscribeEvents(m.payload.session.id);
+      } else if (type === 'session_reconnect') this.connectEvents(m.payload.session.reconnect_url, false);
+      else if (type === 'notification') this.notification(m.metadata.subscription_type, m.payload.event, m.metadata.message_id);
+    });
+    ws.on('close', () => {
+      if (ws !== this.evws) return;
+      this.evRt = setTimeout(() => this.connectEvents(), 5000);
+    });
+    ws.on('error', () => {});
+  }
+
+  async subscribeEvents(sessionId) {
+    const id = cfg.data.tokens.twitch.userId;
+    const subs = [
+      ['channel.channel_points_custom_reward_redemption.add', 1, { broadcaster_user_id: id }],
+      ['channel.follow', 2, { broadcaster_user_id: id, moderator_user_id: id }],
+      ['channel.subscribe', 1, { broadcaster_user_id: id }],
+      ['channel.subscription.message', 1, { broadcaster_user_id: id }],
+      ['channel.subscription.gift', 1, { broadcaster_user_id: id }],
+      ['channel.cheer', 1, { broadcaster_user_id: id }],
+      ['channel.raid', 1, { to_broadcaster_user_id: id }],
+    ];
+    let failed = 0;
+    for (const [type, version, condition] of subs) {
+      try {
+        await this.api('/eventsub/subscriptions', {
+          method: 'POST',
+          body: JSON.stringify({ type, version, condition, transport: { method: 'websocket', session_id: sessionId } }),
+        });
+      } catch { failed++; }
+    }
+    if (failed) this.status('on', 'Logado · alguns eventos sem permissão (refaça o login)');
+  }
+
+  notification(type, e, mid) {
+    const out = (o) => this.emit('message', makeEvent('twitch', { id: mid, ...o }));
+    if (type === 'channel.channel_points_custom_reward_redemption.add') {
+      out({ ev: 'redeem', user: e.user_name, label: 'resgatou', title: e.reward.title, amount: e.reward.cost + ' pts', detail: e.user_input });
+    } else if (type === 'channel.follow') out({ ev: 'follow', user: e.user_name, label: 'seguiu o canal' });
+    else if (type === 'channel.subscribe') {
+      out({ ev: 'sub', user: e.user_name, label: e.is_gift ? 'ganhou um sub de presente' : 'se inscreveu', amount: tier(e.tier) });
+    } else if (type === 'channel.subscription.message') {
+      out({ ev: 'sub', user: e.user_name, label: `renovou (${e.cumulative_months} meses)`, amount: tier(e.tier), detail: e.message?.text });
+    } else if (type === 'channel.subscription.gift') {
+      out({ ev: 'gift', user: e.is_anonymous ? 'Anônimo' : e.user_name, label: `presenteou ${e.total} sub${e.total > 1 ? 's' : ''}`, amount: tier(e.tier) });
+    } else if (type === 'channel.cheer') {
+      out({ ev: 'cheer', user: e.is_anonymous ? 'Anônimo' : e.user_name, label: 'enviou', amount: e.bits + ' bits', detail: e.message });
+    } else if (type === 'channel.raid') {
+      out({ ev: 'raid', user: e.from_broadcaster_user_name, label: `fez raid com ${e.viewers} pessoas` });
+    }
+  }
+
+  async getViewers() {
+    const id = cfg.data.tokens.twitch?.userId;
+    if (!id) return null;
+    const j = await this.api(`/streams?user_id=${id}`);
+    const s = j.data?.[0];
+    return { live: !!s, count: s ? s.viewer_count : 0 };
   }
 
   // ---- Helix ----

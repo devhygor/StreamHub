@@ -14,6 +14,7 @@
   let sendTo = new Set(PLATFORMS);
   let liveTo = new Set();
   let game = null;         // jogo escolhido { name, img, twitch, kick }
+  let viewers = {};        // plataforma -> { live, count }
 
   const feed = $('#feed');
 
@@ -60,16 +61,21 @@
       if (type === 'init') {
         S = payload.state;
         statuses = payload.statuses;
+        viewers = payload.viewers || {};
         msgs = payload.history;
         initUI();
       } else if (type === 'message') addMessage(payload);
-      else if (type === 'status') {
+      else if (type === 'viewers') {
+        viewers = payload;
+        renderViewers();
+      } else if (type === 'status') {
         statuses[payload.platform] = payload;
         renderStatus();
       } else if (type === 'state') {
         S = payload;
         applySettings();
         renderAccounts();
+        renderViewers();
         renderChips();
         renderLiveTargets();
       } else if (type === 'delete') {
@@ -179,6 +185,11 @@
       c.onclick = () => { hiddenPlat.has(p) ? hiddenPlat.delete(p) : hiddenPlat.add(p); renderChips(); rerender(); };
       f.appendChild(c);
     }
+    const ev = el('button', 'chip' + (S.settings.showEvents !== false ? ' sel' : ' off'));
+    ev.textContent = '★ Eventos';
+    ev.title = 'Mostrar/ocultar resgates, subs, bits, raids...';
+    ev.onclick = () => { S.settings.showEvents = S.settings.showEvents === false; saveSettings(); fillSettings(); renderChips(); rerender(); };
+    f.appendChild(ev);
     const t = $('#targets');
     t.innerHTML = '';
     for (const p of PLATFORMS) {
@@ -204,6 +215,69 @@
   $('#input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   });
+
+  // ---------- espectadores ----------
+  function renderViewers() {
+    const box = $('#vbar');
+    box.innerHTML = '';
+    let total = 0, anyLive = false;
+    for (const p of PLATFORMS) {
+      const v = viewers[p];
+      if (!connected(p) && !v) continue;
+      const live = !!v?.live;
+      if (live) { total += v.count; anyLive = true; }
+      const c = el('div', 'vcell' + (live ? ' live' : ' off'));
+      c.append(Chat.logo(p), el('span', 'num', live ? v.count.toLocaleString('pt-BR') : '—'), el('span', 'tag', live ? 'AO VIVO' : 'OFFLINE'));
+      c.title = LABEL[p];
+      box.appendChild(c);
+    }
+    if (box.children.length > 1) {
+      const t = el('div', 'vcell total' + (anyLive ? ' live' : ' off'));
+      t.append(el('span', 'tag', 'TOTAL'), el('span', 'num', total.toLocaleString('pt-BR')));
+      box.appendChild(t);
+    }
+    box.style.display = box.children.length ? '' : 'none';
+  }
+
+  // ---------- campos sensíveis (mascarados; olho para ver, botão para copiar) ----------
+  const ICON_EYE = '<svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const ICON_COPY = '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>';
+
+  function secret(input, copyable = true) {
+    if (input.closest('.secretwrap')) return input;
+    const wrap = el('div', 'secretwrap');
+    input.before(wrap);
+    wrap.appendChild(input);
+    input.classList.add('mask');
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    const btns = el('div', 'sbtns');
+    let timer;
+    const eye = el('button', 'reveal-only');
+    eye.type = 'button';
+    eye.title = 'Mostrar / ocultar';
+    eye.innerHTML = ICON_EYE;
+    eye.onclick = () => {
+      clearTimeout(timer);
+      const hidden = input.classList.toggle('mask');
+      if (!hidden) timer = setTimeout(() => input.classList.add('mask'), 8000); // volta a esconder sozinho
+    };
+    btns.appendChild(eye);
+    if (copyable) {
+      const cp = el('button');
+      cp.type = 'button';
+      cp.title = 'Copiar sem mostrar';
+      cp.innerHTML = ICON_COPY;
+      cp.onclick = () => { if (input.value) { navigator.clipboard.writeText(input.value); toast('Copiado', 'ok'); } };
+      btns.appendChild(cp);
+    }
+    wrap.appendChild(btns);
+    return input;
+  }
+
+  // dentro do OBS (dock/fonte de navegador) nada de links com chave na tela
+  const inOBS = !!window.obsstudio || /OBS/i.test(navigator.userAgent);
+  if (inOBS) { document.documentElement.classList.add('inobs'); $('#nav-obs').remove(); }
 
   // ---------- status ----------
   function renderStatus() {
@@ -263,6 +337,7 @@
         <label class="f">Client Secret<input type="password" data-k="clientSecret" placeholder="${app.hasSecret ? '•••••••• (salvo)' : ''}" autocomplete="off"></label>`;
       if (p === 'twitch') g.innerHTML += `<label class="f">Canal para ler o chat<input type="text" data-c="login" value="${esc(ch.login)}" placeholder="seu_canal"></label>`;
       if (p === 'kick') g.innerHTML += `<label class="f" style="grid-column:1/-1">Webhook URL (cole no app da Kick)<input type="text" readonly value="${esc(S.publicUrl)}/webhooks/kick" onclick="this.select()"></label>`;
+      g.querySelectorAll('[data-k]').forEach((i) => secret(i, i.dataset.k === 'clientId'));
       card.appendChild(g);
 
       const r = el('div', 'row'); r.style.marginTop = '14px';
@@ -440,7 +515,7 @@
   }
 
   // ---------- ajustes ----------
-  const CHECKS = ['showTimestamps', 'showBadges', 'hideCommands'];
+  const CHECKS = ['showTimestamps', 'showBadges', 'hideCommands', 'showEvents', 'hideFollows'];
   const NUMS = ['maxMessages', 'youtubeMinPollSeconds'];
   const LINES = ['hiddenUsers', 'highlightWords'];
 
@@ -508,6 +583,8 @@
     if (frame.dataset.src !== prev) { frame.dataset.src = prev; frame.src = prev; }
   }
 
+  secret($('#obs-overlay'));
+  secret($('#obs-dock'));
   ['#obs-size', '#obs-fade'].forEach((s) => $(s).addEventListener('input', () => renderObs()));
   const copy = (id) => () => { navigator.clipboard.writeText($(id).value); toast('Link copiado!', 'ok'); };
   $('#copy-obs-overlay').onclick = copy('#obs-overlay');
@@ -519,6 +596,7 @@
     bindSettings();
     renderChips();
     renderStatus();
+    renderViewers();
     renderAccounts(true);
     rerender();
   }
