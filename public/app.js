@@ -338,6 +338,7 @@
       if (p === 'twitch') g.innerHTML += `<label class="f">Canal para ler o chat<input type="text" data-c="login" value="${esc(ch.login)}" placeholder="seu_canal"></label>`;
       if (p === 'kick') g.innerHTML += `<label class="f" style="grid-column:1/-1">Webhook URL (cole no app da Kick)<input type="text" readonly value="${esc(S.publicUrl)}/webhooks/kick" onclick="this.select()"></label>`;
       g.querySelectorAll('[data-k]').forEach((i) => secret(i, i.dataset.k === 'clientId'));
+      if (p === 'youtube') g.innerHTML += `<label class="f" style="grid-column:1/-1">Link ou ID da live (opcional — lê o chat sem gastar a cota da API)<input type="text" data-c="videoId" value="${esc(ch.videoId)}" placeholder="https://youtube.com/live/..."></label>`;
       card.appendChild(g);
 
       const r = el('div', 'row'); r.style.marginTop = '14px';

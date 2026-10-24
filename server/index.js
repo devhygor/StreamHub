@@ -226,5 +226,5 @@ server.listen(cfg.data.port, () => {
   console.log(`\n  StreamHub rodando em http://localhost:${cfg.data.port}\n`);
   if (cfg.data.channels.twitch.login || cfg.data.tokens.twitch) platforms.twitch.connect();
   if (cfg.data.tokens.kick) platforms.kick.connect();
-  if (cfg.data.tokens.youtube) platforms.youtube.connect();
+  if (cfg.data.tokens.youtube || cfg.data.channels.youtube.videoId) platforms.youtube.connect();
 });
