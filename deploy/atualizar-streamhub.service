@@ -1,0 +1,7 @@
+[Unit]
+Description=Atualiza o StreamHub a partir da main do GitHub
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/atualizar-streamhub

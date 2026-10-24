@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>StreamHub Overlay</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap">
+<style>
+  :root { --fs: 20px; --twitch: #9146ff; --kick: #53fc18; --youtube: #ff3d3d; }
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+  body { font-family: Inter, 'Segoe UI', system-ui, sans-serif; color: #fff; display: flex; flex-direction: column; justify-content: flex-end; }
+  #feed { padding: 10px; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; font-size: var(--fs); line-height: 1.35; }
+  .msg { display: flex; gap: 9px; align-items: flex-start; padding: 7px 12px; border-radius: 12px; background: rgba(10, 10, 16, 0.62); backdrop-filter: blur(6px); animation: in 0.3s ease-out; transition: opacity 0.6s; text-shadow: 0 1px 3px rgba(0,0,0,.6); width: fit-content; max-width: 100%; }
+  .msg.gone { opacity: 0; }
+  @keyframes in { from { opacity: 0; transform: translateX(-14px); } }
+  .plogo { width: 1em; height: 1em; margin-top: 0.22em; flex: none; fill: currentColor; }
+  .p-twitch { color: var(--twitch); } .p-kick { color: var(--kick); } .p-youtube { color: var(--youtube); }
+  .body { min-width: 0; overflow-wrap: anywhere; }
+  .name { font-weight: 800; } .sep { margin: 0 6px 0 1px; opacity: .7; } .text { font-weight: 600; }
+  .time { opacity: .6; font-size: .75em; margin-right: 6px; }
+  .emote { height: 1.6em; vertical-align: middle; margin: -2px 1px; }
+  .badge { font-size: .6em; font-weight: 800; padding: 1px 5px; border-radius: 4px; margin-right: 5px; vertical-align: 2px; text-shadow: none; }
+  .b-broadcaster { background: #ef4444; } .b-mod { background: #22c55e; color: #04210f; } .b-vip { background: #ec4899; } .b-sub { background: #a78bfa; color: #170b3b; }
+  .super { background: rgba(255, 61, 61, 0.55); }
+  .amount { background: #fff; color: #c00; font-size: .75em; font-weight: 800; padding: 1px 7px; border-radius: 6px; margin-left: 6px; text-shadow: none; }
+  .hl { box-shadow: inset 3px 0 #fbbf24; background: rgba(120, 80, 0, 0.65); }
+</style>
+</head>
+<body>
+<div id="feed"></div>
+<script src="render.js"></script>
+<script>
+  // Parâmetros opcionais: ?platforms=twitch,kick  &size=22  &fade=20
+  const q = new URLSearchParams(location.search);
+  const only = q.get('platforms') ? new Set(q.get('platforms').split(',')) : null;
+  let S = null;
+  const feed = document.getElementById('feed');
+
+  function add(m) {
+    if (only && !only.has(m.platform)) return;
+    if (!Chat.shouldShow(m, S.settings)) return;
+    const n = Chat.render(m, S.settings);
+    feed.appendChild(n);
+    while (feed.children.length > 40) feed.firstChild.remove();
+    const fade = Number(q.get('fade') ?? S.settings.overlayFadeSeconds) || 0;
+    if (fade > 0) setTimeout(() => { n.classList.add('gone'); setTimeout(() => n.remove(), 700); }, fade * 1000);
+  }
+
+  function connect() {
+    const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+    ws.onmessage = (e) => {
+      const { type, payload } = JSON.parse(e.data);
+      if (type === 'init') {
+        S = payload.state;
+        document.documentElement.style.setProperty('--fs', (q.get('size') || S.settings.fontSize + 4) + 'px');
+        feed.innerHTML = '';
+        payload.history.slice(-15).forEach(add);
+      } else if (type === 'state') {
+        S = payload;
+      } else if (type === 'message' && S) add(payload);
+      else if (type === 'delete') feed.querySelectorAll('.msg').forEach((n) => n.dataset.id === String(payload.id) && n.remove());
+      else if (type === 'clear' && !payload.user) feed.innerHTML = '';
+    };
+    ws.onclose = () => setTimeout(connect, 2000);
+  }
+  connect();
+</script>
+</body>
+</html>

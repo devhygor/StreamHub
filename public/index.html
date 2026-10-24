@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StreamHub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="app">
+  <nav class="rail">
+    <div class="brand">SH</div>
+    <button class="nav active" data-view="chat" title="Chat">
+      <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.5A8 8 0 1 1 21 12z"/></svg>
+    </button>
+    <button class="nav" data-view="live" title="Live (título e jogo)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"/><path d="M7.5 7.5a6.4 6.4 0 0 0 0 9M16.5 7.5a6.4 6.4 0 0 1 0 9M4.5 4.500a10.500 10.500 0 0 0 0 15M19.500 4.500a10.500 10.500 0 0 1 0 15"/></svg>
+    </button>
+    <button class="nav" data-view="accounts" title="Contas">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+    </button>
+    <button class="nav" data-view="settings" title="Ajustes">
+      <svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+    </button>
+    <div class="spacer"></div>
+    <div class="dots" id="dots"></div>
+  </nav>
+
+  <main>
+    <!-- CHAT -->
+    <section class="view active" id="view-chat">
+      <div class="toolbar">
+        <div id="filters" class="row" style="gap:6px"></div>
+        <input type="search" id="search" placeholder="Buscar no chat...">
+        <div class="spacer"></div>
+        <button class="btn iconbtn" id="btn-clear" title="Limpar chat">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+        </button>
+      </div>
+      <div class="pinned" id="pinned"></div>
+      <div class="chatwrap">
+        <div id="feed"></div>
+        <button class="btn primary sm" id="newmsgs">↓ novas mensagens</button>
+      </div>
+      <div class="composer">
+        <div class="targets" id="targets"></div>
+        <textarea id="input" rows="1" placeholder="Enviar mensagem para as plataformas marcadas (Enter)"></textarea>
+        <button class="btn primary" id="send">Enviar</button>
+      </div>
+    </section>
+
+    <!-- LIVE -->
+    <section class="view" id="view-live">
+      <div class="scroll"><div class="wrap">
+        <div><h1>Título e jogo</h1><p class="sub">Altere uma vez e aplique em todas as plataformas.</p></div>
+
+        <div class="card">
+          <h3>Atualizar live</h3>
+          <div style="display:grid;gap:14px">
+            <label class="f">Título
+              <input type="text" id="title" maxlength="140" placeholder="Ex.: Zerando o jogo pela primeira vez | !discord">
+            </label>
+            <div class="f">Jogo / categoria
+              <div class="games">
+                <input type="text" id="game-q" placeholder="Buscar jogo (ex.: Elden Ring)">
+                <div class="dropdown" id="game-dd" hidden></div>
+              </div>
+              <div id="game-sel" style="margin-top:6px"></div>
+            </div>
+            <div class="f">Aplicar em
+              <div class="row" id="live-targets" style="margin-top:2px"></div>
+            </div>
+            <div class="row">
+              <button class="btn primary" id="apply">Atualizar em todas</button>
+              <button class="btn" id="load-cur">Carregar atual</button>
+              <button class="btn" id="save-preset">Salvar como preset</button>
+            </div>
+            <div class="note">YouTube aceita só o título (a API dele não permite escolher jogo).</div>
+          </div>
+        </div>
+
+        <div class="card" id="cur-card" hidden>
+          <h3>Resultado</h3>
+          <div class="cur" id="cur"></div>
+        </div>
+
+        <div class="card">
+          <h3>Presets</h3>
+          <div class="presets" id="presets"></div>
+        </div>
+      </div></div>
+    </section>
+
+    <!-- CONTAS -->
+    <section class="view" id="view-accounts">
+      <div class="scroll"><div class="wrap">
+        <div><h1>Contas</h1><p class="sub">Cada plataforma exige um app próprio seu (gratuito). Os dados ficam só neste computador.</p></div>
+        <div id="accounts" style="display:grid;gap:16px"></div>
+      </div></div>
+    </section>
+
+    <!-- AJUSTES -->
+    <section class="view" id="view-settings">
+      <div class="scroll"><div class="wrap">
+        <div><h1>Ajustes</h1><p class="sub">Personalize o chat. Vale para o painel e para o overlay.</p></div>
+
+        <div class="card">
+          <h3>Aparência</h3>
+          <div style="display:grid;gap:14px">
+            <label class="f">Tamanho da fonte: <span id="fs-val"></span>
+              <input type="range" id="s-fontSize" min="11" max="28">
+            </label>
+            <div class="row" style="gap:22px">
+              <label class="toggle"><input type="checkbox" id="s-showTimestamps"> Mostrar horário</label>
+              <label class="toggle"><input type="checkbox" id="s-showBadges"> Mostrar selos (MOD, SUB...)</label>
+              <label class="toggle"><input type="checkbox" id="s-hideCommands"> Ocultar comandos (!algo)</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Filtros</h3>
+          <div class="grid2">
+            <label class="f">Usuários ocultos (um por linha) — bots
+              <textarea id="s-hiddenUsers" rows="5"></textarea>
+            </label>
+            <label class="f">Palavras em destaque (uma por linha)
+              <textarea id="s-highlightWords" rows="5" placeholder="seu nome&#10;sorteio"></textarea>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Overlay para o OBS</h3>
+          <p class="note" style="margin-top:0">Adicione como <b>Fonte de Navegador</b> (largura ~420, altura ~700). Fundo já é transparente.</p>
+          <div class="row"><span class="code" id="overlay-url"></span><button class="btn sm" id="copy-overlay">Copiar</button></div>
+          <div class="row" style="margin-top:12px;gap:22px">
+            <label class="f" style="width:200px">Sumir mensagens após (seg, 0 = nunca)
+              <input type="text" id="s-overlayFadeSeconds">
+            </label>
+          </div>
+          <p class="note">Dock no OBS: Docks → Docks de Navegador Personalizados → URL <span class="code" id="dock-url"></span></p>
+        </div>
+
+        <div class="card">
+          <h3>Outros</h3>
+          <div class="grid2">
+            <label class="f">Mensagens mantidas na tela
+              <input type="text" id="s-maxMessages">
+            </label>
+            <label class="f">YouTube: intervalo mínimo de leitura (seg)
+              <input type="text" id="s-youtubeMinPollSeconds">
+            </label>
+          </div>
+          <p class="note">A cota gratuita da API do YouTube é limitada; intervalos maiores economizam cota (8s dura ~3h30 de live por dia).</p>
+          <div class="row" style="margin-top:6px">
+            <label class="toggle"><input type="checkbox" id="demo"> Modo demonstração (mensagens falsas para testar o visual)</label>
+          </div>
+        </div>
+      </div></div>
+    </section>
+  </main>
+</div>
+<div id="toasts"></div>
+<script src="render.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

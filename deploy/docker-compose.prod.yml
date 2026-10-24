@@ -1,0 +1,15 @@
+# Roda na VPS atrás do Caddy (rede externa "web"). Segredos em /srv/streamhub/streamhub.env
+name: streamhub
+
+services:
+  streamhub:
+    build: ..
+    restart: unless-stopped
+    env_file: /srv/streamhub/streamhub.env
+    volumes:
+      - /srv/streamhub/data:/data
+    networks: [web]
+
+networks:
+  web:
+    external: true
