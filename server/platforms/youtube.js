@@ -103,7 +103,7 @@ class YouTube extends EventEmitter {
         }
         await chat.run(videoId, {
           shouldStop: () => !alive(),
-          onOpen: () => this.status('on', title ? `Ao vivo · ${title}` : `Lendo o chat da live ${videoId}`),
+          onOpen: () => { this.videoId = videoId; this.status('on', title ? `Ao vivo · ${title}` : `Lendo o chat da live ${videoId}`); },
           onMessage: (m) => this.emit('message', m),
           onEvent: (e) => this.emit('message', makeEvent('youtube', e)),
           onDelete: (id) => this.emit('delete', { platform: 'youtube', id }),
@@ -119,6 +119,7 @@ class YouTube extends EventEmitter {
   disconnect() {
     this.want = false;
     this.run++;
+    this.videoId = null;
     this.status('off');
   }
 
@@ -134,6 +135,10 @@ class YouTube extends EventEmitter {
   }
 
   async getViewers() {
+    // preferência: endpoint do site (sem cota); a API oficial fica de reserva
+    if (this.videoId && this.state === 'on') {
+      try { return await chat.viewers(this.videoId); } catch {}
+    }
     if (!this.broadcast || Date.now() < this.quotaUntil) return null;
     const j = await this.api(`/videos?part=liveStreamingDetails&id=${this.broadcast.id}`);
     const d = j.items?.[0]?.liveStreamingDetails;

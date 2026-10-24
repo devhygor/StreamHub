@@ -114,6 +114,26 @@ function parseAction(a) {
   return null;
 }
 
+// Quantos assistem agora (mesmo endpoint que o site usa; sem cota). Devolve { live, count }.
+let meta = null;
+async function viewers(videoId) {
+  if (!meta || meta.videoId !== videoId) {
+    const st = await init(videoId).catch(() => null);
+    if (!st) throw new Error('sem acesso ao vídeo');
+    meta = { videoId, key: st.key, version: st.version };
+  }
+  const r = await fetch(`https://www.youtube.com/youtubei/v1/updated_metadata?key=${meta.key}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'User-Agent': UA },
+    body: JSON.stringify({ context: { client: { clientName: 'WEB', clientVersion: meta.version, hl: 'pt-BR' } }, videoId }),
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const j = await r.json();
+  const v = j.actions?.find((a) => a.updateViewershipAction)?.updateViewershipAction?.viewCount?.videoViewCountRenderer;
+  if (!v) return { live: false, count: 0 };
+  return { live: !!v.isLive, count: Number(v.originalViewCount || 0) };
+}
+
 // Lê o chat até `shouldStop()` ou até dar erro. Chama onMessage / onEvent / onDelete.
 async function run(videoId, { onMessage, onEvent, onDelete, onOpen, shouldStop }) {
   const st = await init(videoId);
@@ -150,4 +170,4 @@ async function run(videoId, { onMessage, onEvent, onDelete, onOpen, shouldStop }
   if (!cont) throw new Error('O chat da live terminou');
 }
 
-module.exports = { run, parseVideoId };
+module.exports = { run, parseVideoId, viewers };
