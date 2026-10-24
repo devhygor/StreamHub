@@ -9,11 +9,11 @@ const DAYS = 30;
 
 function hashPassword(pass) {
   const salt = crypto.randomBytes(16).toString('hex');
-  return `scrypt$${salt}$${crypto.scryptSync(pass, salt, 64).toString('hex')}`;
+  return `scrypt:${salt}:${crypto.scryptSync(pass, salt, 64).toString('hex')}`;
 }
 
 function checkPassword(pass) {
-  const [, salt, h] = HASH.split('$');
+  const [, salt, h] = HASH.split(":");
   if (!salt || !h) return false;
   const want = Buffer.from(h, 'hex');
   const got = crypto.scryptSync(pass, salt, 64);
