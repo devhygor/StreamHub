@@ -352,6 +352,12 @@
       const login = el('button', 'btn primary', acc ? 'Trocar conta' : 'Entrar com ' + LABEL[p]);
       login.onclick = async () => { await save.onclick(); window.open(`/auth/${p}/login`, '_blank', 'width=560,height=760'); };
       r.append(save, login);
+      if (p === 'kick') {
+        const basic = el('button', 'btn', 'Entrar (básico)');
+        basic.title = 'Sem resgates e Kicks. Use se o login normal der "invalid authorization request".';
+        basic.onclick = async () => { await save.onclick(); window.open('/auth/kick/login?basic=1', '_blank', 'width=560,height=760'); };
+        r.appendChild(basic);
+      }
       if (acc) {
         const out = el('button', 'btn danger', 'Sair');
         out.onclick = () => api('/api/logout/' + p, {});

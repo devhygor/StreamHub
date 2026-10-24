@@ -19,6 +19,7 @@ const PROVIDERS = {
     authUrl: 'https://id.kick.com/oauth/authorize',
     tokenUrl: 'https://id.kick.com/oauth/token',
     scope: 'user:read channel:read channel:write chat:write events:subscribe channel:rewards:read kicks:read',
+    scopeBasic: 'user:read channel:read channel:write chat:write events:subscribe',
     pkce: true,
     async identify(access) {
       const h = { Authorization: `Bearer ${access}` };
@@ -99,7 +100,7 @@ function router(onLogin) {
       client_id: app.clientId,
       redirect_uri: redirectUri(p),
       response_type: 'code',
-      scope: prov.scope,
+      scope: (req.query.basic && prov.scopeBasic) || prov.scope,
       state,
       ...(prov.extra || {}),
     });
