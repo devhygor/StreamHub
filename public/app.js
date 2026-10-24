@@ -48,6 +48,7 @@
       document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + b.dataset.view));
       if (b.dataset.view === 'live') renderLive();
       if (b.dataset.view === 'accounts') renderAccounts(true);
+      if (b.dataset.view === 'obs') renderObs();
     })
   );
 
@@ -440,7 +441,7 @@
 
   // ---------- ajustes ----------
   const CHECKS = ['showTimestamps', 'showBadges', 'hideCommands'];
-  const NUMS = ['maxMessages', 'youtubeMinPollSeconds', 'overlayFadeSeconds'];
+  const NUMS = ['maxMessages', 'youtubeMinPollSeconds'];
   const LINES = ['hiddenUsers', 'highlightWords'];
 
   function fillSettings() {
@@ -450,10 +451,6 @@
     CHECKS.forEach((k) => ($('#s-' + k).checked = !!s[k]));
     NUMS.forEach((k) => ($('#s-' + k).value = s[k]));
     LINES.forEach((k) => { if (document.activeElement !== $('#s-' + k)) $('#s-' + k).value = (s[k] || []).join('\n'); });
-    const base = location.origin;
-    const k = S.needsKey ? '?key=SUA_CHAVE' : '';
-    $('#overlay-url').textContent = `${base}/overlay.html${k}`;
-    $('#dock-url').textContent = `${base}/${k}`;
   }
 
   function applySettings() {
@@ -470,9 +467,51 @@
       saveSettings();
     }));
     LINES.forEach((k) => ($('#s-' + k).onchange = () => rerender()));
-    $('#copy-overlay').onclick = () => { navigator.clipboard.writeText($('#overlay-url').textContent); toast('URL copiada', 'ok'); };
     $('#demo').onchange = (e) => api('/api/demo', { on: e.target.checked });
   }
+
+  // ---------- OBS ----------
+  const obsPlats = new Set(PLATFORMS);
+  let obsInfo = null;
+
+  async function renderObs() {
+    if (!obsInfo) obsInfo = await api('/api/obs');
+    if (!$('#obs-size').dataset.init) {
+      $('#obs-size').value = (S.settings.fontSize || 15) + 4;
+      $('#obs-size').dataset.init = '1';
+    }
+    const box = $('#obs-plats');
+    box.innerHTML = '';
+    for (const p of PLATFORMS) {
+      const c = el('button', `chip t-${p}` + (obsPlats.has(p) ? ' sel' : ' off'));
+      c.append(Chat.logo(p), el('span', '', LABEL[p]));
+      c.onclick = () => {
+        obsPlats.has(p) ? obsPlats.delete(p) : obsPlats.add(p);
+        if (!obsPlats.size) obsPlats.add(p);
+        renderObs();
+      };
+      box.appendChild(c);
+    }
+    const k = obsInfo.key ? 'key=' + encodeURIComponent(obsInfo.key) : '';
+    const q = new URLSearchParams();
+    if (obsPlats.size < PLATFORMS.length) q.set('platforms', [...obsPlats].join(','));
+    const size = +$('#obs-size').value, fade = +$('#obs-fade').value;
+    if (size) q.set('size', size);
+    if (fade > 0) q.set('fade', fade);
+    const join = (s) => [k, s].filter(Boolean).join('&');
+    const url = `${obsInfo.base}/overlay.html?${join(q.toString())}`.replace(/\?$/, '');
+    $('#obs-overlay').value = url;
+    $('#obs-dock').value = `${obsInfo.base}/${k ? '?' + k : ''}`;
+    // prévia usa o próprio cookie de login (sem a chave na URL)
+    const frame = $('#obs-frame');
+    const prev = `/overlay.html?${q}`;
+    if (frame.dataset.src !== prev) { frame.dataset.src = prev; frame.src = prev; }
+  }
+
+  ['#obs-size', '#obs-fade'].forEach((s) => $(s).addEventListener('input', () => renderObs()));
+  const copy = (id) => () => { navigator.clipboard.writeText($(id).value); toast('Link copiado!', 'ok'); };
+  $('#copy-obs-overlay').onclick = copy('#obs-overlay');
+  $('#copy-obs-dock').onclick = copy('#obs-dock');
 
   // ---------- init ----------
   function initUI() {

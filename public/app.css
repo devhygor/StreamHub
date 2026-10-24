@@ -244,3 +244,12 @@ code, .code { background: rgba(0, 0, 0, 0.4); padding: 2px 7px; border-radius: 6
   .grid2 { grid-template-columns: 1fr; }
   .toolbar input { max-width: none; flex: 1; }
 }
+
+/* ---------- OBS ---------- */
+.obs-grid { display: grid; grid-template-columns: 1fr 260px; gap: 20px; align-items: start; }
+.preview { height: 360px; border-radius: 12px; border: 1px solid var(--line); overflow: hidden;
+  background: repeating-conic-gradient(#1b1b26 0% 25%, #14141d 0% 50%) 0 0 / 20px 20px; }
+.preview iframe { width: 420px; height: 700px; border: 0; transform: scale(0.515); transform-origin: top left; }
+.steps { color: var(--muted); font-size: 13px; line-height: 1.8; padding-left: 20px; margin: 14px 0 0; }
+.steps b { color: var(--text); font-weight: 600; }
+@media (max-width: 760px) { .obs-grid { grid-template-columns: 1fr; } .preview { display: none; } }

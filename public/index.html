@@ -21,6 +21,9 @@
     <button class="nav" data-view="accounts" title="Contas">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
     </button>
+    <button class="nav" data-view="obs" title="OBS (links prontos)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    </button>
     <button class="nav" data-view="settings" title="Ajustes">
       <svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
     </button>
@@ -101,6 +104,52 @@
       </div></div>
     </section>
 
+    <!-- OBS -->
+    <section class="view" id="view-obs">
+      <div class="scroll"><div class="wrap">
+        <div><h1>OBS</h1><p class="sub">Links prontos: copie, cole no OBS e salve. Nada para configurar do lado de lá.</p></div>
+
+        <div class="card">
+          <h3>1 · Chat na tela da live (overlay)</h3>
+          <div class="obs-grid">
+            <div style="display:grid;gap:14px">
+              <div class="f">Plataformas no overlay
+                <div class="row" id="obs-plats" style="margin-top:2px"></div>
+              </div>
+              <div class="grid2">
+                <label class="f">Tamanho da fonte (px)<input type="text" id="obs-size" value="22"></label>
+                <label class="f">Sumir após (seg, 0 = nunca)<input type="text" id="obs-fade" value="0"></label>
+              </div>
+              <label class="f">Link do overlay
+                <input type="text" id="obs-overlay" readonly onclick="this.select()">
+              </label>
+              <div class="row"><button class="btn primary" id="copy-obs-overlay">Copiar link</button></div>
+              <ol class="steps">
+                <li>No OBS, em <b>Fontes</b> clique em <b>+</b> → <b>Navegador</b>.</li>
+                <li>Cole o link em <b>URL</b>. Largura <b>420</b>, altura <b>700</b>.</li>
+                <li>Marque <b>Atualizar navegador quando a cena ficar ativa</b> e confirme.</li>
+              </ol>
+            </div>
+            <div class="preview"><iframe id="obs-frame" title="Prévia do overlay"></iframe></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>2 · Chat como painel dentro do OBS (dock)</h3>
+          <label class="f">Link do painel
+            <input type="text" id="obs-dock" readonly onclick="this.select()">
+          </label>
+          <div class="row" style="margin-top:12px"><button class="btn primary" id="copy-obs-dock">Copiar link</button></div>
+          <ol class="steps">
+            <li>No OBS: menu <b>Docks</b> → <b>Docks de Navegador Personalizados</b>.</li>
+            <li>Nome: <b>StreamHub</b>. Cole o link em <b>URL</b> e clique em <b>Aplicar</b>.</li>
+            <li>Pronto: o painel aparece na janela do OBS com chat, envio e troca de título/jogo.</li>
+          </ol>
+        </div>
+        <p class="note">Estes links contêm a sua chave de acesso. Não compartilhe nem mostre na live.</p>
+      </div></div>
+    </section>
+
     <!-- AJUSTES -->
     <section class="view" id="view-settings">
       <div class="scroll"><div class="wrap">
@@ -130,18 +179,6 @@
               <textarea id="s-highlightWords" rows="5" placeholder="seu nome&#10;sorteio"></textarea>
             </label>
           </div>
-        </div>
-
-        <div class="card">
-          <h3>Overlay para o OBS</h3>
-          <p class="note" style="margin-top:0">Adicione como <b>Fonte de Navegador</b> (largura ~420, altura ~700). Fundo já é transparente.</p>
-          <div class="row"><span class="code" id="overlay-url"></span><button class="btn sm" id="copy-overlay">Copiar</button></div>
-          <div class="row" style="margin-top:12px;gap:22px">
-            <label class="f" style="width:200px">Sumir mensagens após (seg, 0 = nunca)
-              <input type="text" id="s-overlayFadeSeconds">
-            </label>
-          </div>
-          <p class="note">Dock no OBS: Docks → Docks de Navegador Personalizados → URL <span class="code" id="dock-url"></span></p>
         </div>
 
         <div class="card">

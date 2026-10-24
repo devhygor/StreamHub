@@ -118,6 +118,8 @@ app.use(auth.router((p) => {
   else platforms[p].disconnect();
 }));
 
+app.get('/api/obs', (req, res) => res.json({ base: cfg.publicUrl(), key: cfg.accessKey }));
+
 app.get('/api/state', (req, res) => res.json({ ...cfg.publicView(), statuses }));
 
 // salva credenciais dos apps, canais e preferências
