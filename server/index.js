@@ -13,6 +13,7 @@ const platforms = {
 };
 
 const crypto = require('crypto');
+const login = require('./login');
 
 const app = express();
 app.set('trust proxy', true);
@@ -28,19 +29,44 @@ function cookieOf(req, name) {
   return m ? m.slice(name.length + 1) : '';
 }
 const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
-const authed = (req) => !KEY_HASH || same(cookieOf(req, 'sh_key'), KEY_HASH);
+const PROTECTED = !!KEY_HASH || login.enabled;
+// entra com sessão (e-mail + senha) ou com o cookie da chave (usado pelo overlay do OBS)
+const authed = (req) =>
+  !PROTECTED ||
+  login.validSession(cookieOf(req, 'sh_session')) ||
+  (!!KEY_HASH && same(cookieOf(req, 'sh_key'), KEY_HASH));
+
+app.get('/login', (req, res) => (login.enabled ? res.type('html').send(login.page()) : res.redirect('/')));
+
+app.post('/login', express.json(), (req, res) => {
+  if (!login.enabled) return res.sendStatus(404);
+  if (login.blocked(req.ip)) return res.sendStatus(429);
+  if (!login.checkLogin(req.body?.email, req.body?.password)) {
+    login.fail(req.ip);
+    return res.sendStatus(401);
+  }
+  login.ok(req.ip);
+  res.setHeader('Set-Cookie', `sh_session=${login.makeSession()}; Max-Age=${login.DAYS * 86400}; ${login.cookieAttrs(req.secure)}`);
+  res.json({ ok: true });
+});
+
+app.post('/logout', (req, res) => {
+  res.setHeader('Set-Cookie', `sh_session=; Max-Age=0; ${login.cookieAttrs(req.secure)}`);
+  res.json({ ok: true });
+});
 
 app.use((req, res, next) => {
   if (authed(req)) return next();
   const k = req.query.key;
-  if (typeof k === 'string' && same(sha(k), KEY_HASH)) {
+  if (typeof k === 'string' && KEY_HASH && same(sha(k), KEY_HASH)) {
     const secure = req.secure ? '; Secure' : '';
     res.setHeader('Set-Cookie', `sh_key=${KEY_HASH}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax${secure}`);
     const u = new URL(req.originalUrl, 'http://x');
     u.searchParams.delete('key');
     return res.redirect(u.pathname + u.search);
   }
-  res.status(401).type('html').send('<!doctype html><meta charset=utf-8><body style="font-family:system-ui;background:#0a0a10;color:#eee;display:grid;place-items:center;height:100vh"><div style="text-align:center"><h2>StreamHub</h2><p>Acesso restrito. Abra o endereço com <code>?key=SUA_CHAVE</code>.</p></div>');
+  if (login.enabled && req.method === 'GET' && req.accepts('html') && !req.path.startsWith('/api/')) return res.redirect('/login');
+  res.sendStatus(401);
 });
 
 app.use(express.json());
