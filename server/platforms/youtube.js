@@ -35,7 +35,7 @@ class YouTube extends EventEmitter {
   // procura a live ativa (ou a próxima agendada) da conta
   async findBroadcast() {
     for (const s of ['active', 'upcoming']) {
-      const j = await this.api(`/liveBroadcasts?part=snippet,status&mine=true&broadcastStatus=${s}&maxResults=5`);
+      const j = await this.api(`/liveBroadcasts?part=snippet,status&broadcastStatus=${s}&maxResults=5`);
       const b = j.items?.find((i) => i.snippet.liveChatId);
       if (b) return b;
     }
